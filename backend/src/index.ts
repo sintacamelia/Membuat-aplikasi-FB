@@ -6,12 +6,14 @@ import cors from "cors";
 import helmet from "helmet";
 import bodyParser from "body-parser";
 import cookieParser from "cookie-parser";
+import mongoose from 'mongoose';
 import userRouter from "./routes/userRouter";
 import { authenticate } from "./middleware/authMiddleware";
 import { errorHandler } from "./middleware/errorMiddleware";
 
 dotenv.config();
 
+// Define the UserBasicInfo interface globally within Express
 interface UserBasicInfo {
   _id: string;
   name: string;
@@ -28,27 +30,32 @@ declare global {
 
 const app = express();
 const port = process.env.PORT || 8000;
+
+// Middleware setup
 app.use(helmet());
-
-app.use(
-  cors({
-    origin: "http://localhost:3000",
-    credentials: true,
-  })
-);
-
+app.use(cors({
+  origin: "http://localhost:8000",
+  credentials: true,
+}));
 app.use(cookieParser());
+app.use(bodyParser.json()); 
+app.use(bodyParser.urlencoded({ extended: true }));
 
-app.use(bodyParser.json()); // To recognize the req obj as a json obj
-app.use(bodyParser.urlencoded({ extended: true })); // To recognize the req obj as strings or arrays. extended true to handle nested objects also
-
-app.listen(port, () => {
-  console.log(`Server is running on port ${port}`);
-});
-
+// Routes setup
 app.use(authRouter);
 app.use("/users", authenticate, userRouter);
 
+// Error handling middleware
 app.use(errorHandler);
 
-connectUserDB();
+// Connect to MongoDB
+connectUserDB(); // Assume this function connects to the MongoDB
+
+mongoose.connect(process.env.MONGO_URI || 'mongodb+srv://sinta123:sinta123@cluster0.qqt3i.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0')
+  .then(() => {
+    console.log('MongoDB Connected');
+    app.listen(port, () => console.log(`Server running on port ${port}`));
+  })
+  .catch(err => console.error('Error connecting to MongoDB:', err));
+
+   
